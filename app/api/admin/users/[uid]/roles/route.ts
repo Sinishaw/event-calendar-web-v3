@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const body = await req.json();
     const result = rolesSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: result.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
     }
 
     const { admin, creater, publisher, company } = result.data;

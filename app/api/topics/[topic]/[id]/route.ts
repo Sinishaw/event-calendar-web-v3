@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, getRoles } from '@/lib/auth';
-import { getContent, updateContent, deleteContent } from '@/services/content.service';
-import { getCompany } from '@/services/company.service';
+import { getTopicContent, updateTopicContent, deleteTopicContent } from '@/services/topic-content.service';
 import { uploadToGCS } from '@/lib/upload';
 import { z } from 'zod';
 
-const updateContentSchema = z.object({
+const updateTopicContentSchema = z.object({
+  topic: z.string().min(1, 'Topic selection is required').optional(),
+  companyName: z.string().min(2, 'Company name must be at least 2 characters').optional(),
+  logoUrl: z.string().url('Invalid logo icon URL').or(z.literal('')).optional(),
   title: z.string().min(2, 'Title must be at least 2 characters').optional(),
   body: z.string().min(2, 'Body must be at least 2 characters').optional(),
   category: z.string().min(1, 'Category is required').optional(),
@@ -24,7 +26,7 @@ const updateContentSchema = z.object({
 });
 
 interface RouteParams {
-  params: Promise<{ id: string }>;
+  params: Promise<{ topic: string; id: string }>;
 }
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
@@ -33,23 +35,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
-  const roles = getRoles(session);
-  const companyId = roles.company;
-
-  if (!companyId || companyId === 'Not Assigned') {
-    return NextResponse.json({ error: 'User is not assigned to a company' }, { status: 400 });
-  }
+  const { topic, id } = await params;
 
   try {
-    const content = await getContent(companyId, id);
+    const content = await getTopicContent(topic, id);
     if (!content) {
-      return NextResponse.json({ error: 'Content not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Topic content not found' }, { status: 404 });
     }
     return NextResponse.json({ success: true, data: content });
   } catch (error: any) {
-    console.error(`API GET content ${id} error:`, error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch content' }, { status: 500 });
+    console.error(`API GET topic content ${id} error:`, error);
+    return NextResponse.json({ error: error.message || 'Failed to fetch topic content' }, { status: 500 });
   }
 }
 
@@ -59,32 +55,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
   const roles = getRoles(session);
+  if (!roles.isAdmin && !roles.isCreater) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { topic: topicParam, id } = await params;
   
   try {
     const formData = await req.formData();
-    const companyId = roles.isAdmin 
-      ? (formData.get('company') as string || roles.company) 
-      : roles.company;
-
-    if (!companyId || companyId === 'Not Assigned') {
-      return NextResponse.json({ error: 'User is not assigned to a company' }, { status: 400 });
-    }
-
-    // Authorization: Admin or associated company Creator/Publisher
-    if (!roles.isAdmin && roles.company !== companyId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const companyProfile = await getCompany(companyId);
-    if (!companyProfile) {
-      return NextResponse.json({ error: `Company "${companyId}" not found` }, { status: 404 });
-    }
-
+    
     const dataObj: any = {};
     const textFields = [
-      'title', 'body', 'category', 'nationalDay', 'description',
+      'topic', 'companyName', 'logoUrl', 'title', 'body', 'category', 'nationalDay', 'description',
       'vUrl', 'wUrl', 'frD', 'toD', 'ageRestriction', 'tagColor'
     ];
     for (const f of textFields) {
@@ -104,13 +87,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       dataObj.fetchExpirationDate = formData.get('fetchExpirationDate') as string;
     }
 
-    const result = updateContentSchema.safeParse(dataObj);
+    const result = updateTopicContentSchema.safeParse(dataObj);
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
     }
 
     const photoFile = formData.get('photo') as File | null;
     let iUrl: string | undefined = undefined;
+    const targetTopicId = result.data.topic || topicParam;
 
     if (photoFile && photoFile.size > 0) {
       try {
@@ -118,7 +102,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         const buffer = Buffer.from(bytes);
         const ext = photoFile.name.split('.').pop() || 'png';
         const timestamp = Date.now();
-        const destinationPath = `CompanyImages/${companyId}/Contents/${companyId}_content_${timestamp}.${ext}`;
+        const destinationPath = `TopicsImage/${targetTopicId}/Contents/${targetTopicId}_content_${timestamp}.${ext}`;
         iUrl = await uploadToGCS(buffer, destinationPath, photoFile.type);
       } catch (uploadError) {
         console.error('Failed to upload content image during update:', uploadError);
@@ -127,7 +111,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       iUrl = ''; // Mark to delete
     }
 
-    // Convert date parameters
     const updateInput: any = {
       ...result.data,
       iUrl: iUrl === '' ? null : iUrl,
@@ -136,13 +119,12 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     if (result.data.toD) updateInput.toD = new Date(result.data.toD);
     if (result.data.markDate) updateInput.markDate = new Date(result.data.markDate);
     if (result.data.fetchExpirationDate) updateInput.fetchExpirationDate = new Date(result.data.fetchExpirationDate);
-    updateInput.companyName = companyProfile.name;
 
-    const updatedContent = await updateContent(companyId, id, updateInput, companyProfile.iUrl || '', session.email);
-    return NextResponse.json({ success: true, data: updatedContent });
+    const updated = await updateTopicContent(topicParam, id, updateInput, session.email);
+    return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
-    console.error(`API PUT content ${id} error:`, error);
-    return NextResponse.json({ error: error.message || 'Failed to update content' }, { status: 500 });
+    console.error(`API PUT topic content ${id} error:`, error);
+    return NextResponse.json({ error: error.message || 'Failed to update topic content' }, { status: 500 });
   }
 }
 
@@ -152,24 +134,18 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
   const roles = getRoles(session);
-  const companyId = roles.company;
-
-  if (!companyId || companyId === 'Not Assigned') {
-    return NextResponse.json({ error: 'User is not assigned to a company' }, { status: 400 });
-  }
-
-  // Authorization: must be Publisher or Admin
   if (!roles.isAdmin && !roles.isPublisher) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const { topic, id } = await params;
+
   try {
-    await deleteContent(companyId, id, session.email);
+    await deleteTopicContent(topic, id, session.email);
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error(`API DELETE content ${id} error:`, error);
-    return NextResponse.json({ error: error.message || 'Failed to delete content' }, { status: 500 });
+    console.error(`API DELETE topic content ${id} error:`, error);
+    return NextResponse.json({ error: error.message || 'Failed to delete topic content' }, { status: 500 });
   }
 }

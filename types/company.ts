@@ -17,4 +17,8 @@ export interface Company {
   iUrl?: string | null; // logo/profile image
   st: number; // 0 = New, 1 = Published, 2 = Deleted
   stString?: string;
+  facebook?: string;
+  twitter?: string;
+  youtube?: string;
+  instagram?: string;
 }

@@ -76,7 +76,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     const result = updateCompanySchema.safeParse(dataObj);
     if (!result.success) {
-      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: result.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
     }
 
     const photoFile = formData.get('photo') as File | null;

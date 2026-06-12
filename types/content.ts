@@ -20,6 +20,8 @@ export interface CompanyContent {
   notified: boolean;
   successCount: number;
   failureCount: number;
+  messageId?: string;
+  notifiedDate?: string;
   source: 'Company';
   companyName: string;
   logoUrl?: string; // Logo image URL of company

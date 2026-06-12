@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'react'; // Wait, in Next.js App Router we must import useRouter from 'next/navigation'!
-import { useRouter as useAppRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { UserProfile } from '@/types/user';
 
 interface UserActionsProps {
@@ -10,7 +9,7 @@ interface UserActionsProps {
 }
 
 export default function UserActions({ user }: UserActionsProps) {
-  const router = useAppRouter();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

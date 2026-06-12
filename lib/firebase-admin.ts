@@ -7,9 +7,31 @@ let app: App;
 
 function getFirebaseAdmin(): App {
   if (!getApps().length) {
-    const serviceAccount = require('../fire_key.json');
+    let credential;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+    if (privateKey && clientEmail && projectId) {
+      credential = cert({
+        projectId,
+        clientEmail,
+        // Replace escaped newline sequences from .env string representation
+        privateKey: privateKey.replace(/\\n/g, '\n').replace(/"/g, ''),
+      });
+    } else {
+      try {
+        const serviceAccount = require('../fire_key.json');
+        credential = cert(serviceAccount);
+      } catch (error) {
+        throw new Error(
+          'Firebase Admin initialization failed: Missing Firebase environment variables (FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL) and fire_key.json not found.'
+        );
+      }
+    }
+
     app = initializeApp({
-      credential: cert(serviceAccount),
+      credential,
       databaseURL: process.env.FIREBASE_DATABASE_URL,
     });
   } else {

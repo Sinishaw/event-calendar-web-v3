@@ -103,8 +103,13 @@ export async function updateCompanyConfig(company: string, data: CompanyThemeCon
   }
 }
 
+export interface TopicOption {
+  name: string;
+  value: string;
+}
+
 /** Gets only the global topics list */
-export async function getTopics(): Promise<string[]> {
+export async function getTopics(): Promise<TopicOption[]> {
   try {
     const rc = getConfig();
     const template = await rc.getTemplate();

@@ -1,6 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# ─── Dependencies ────────────────────────────────────────────────────────────
 /node_modules
 /.pnp
 .pnp.*
@@ -10,32 +10,62 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# ─── Testing ─────────────────────────────────────────────────────────────────
 /coverage
 
-# next.js
+# ─── Next.js ─────────────────────────────────────────────────────────────────
 /.next/
 /out/
 
-# production
+# ─── Production build ────────────────────────────────────────────────────────
 /build
 
-# misc
-.DS_Store
-*.pem
+# ─── Environment & secrets ───────────────────────────────────────────────────
+# All .env files — never commit real environment variables
+.env
+.env.*
+.env.local
+.env.*.local
 
-# debug
+# ─── Firebase / Google Cloud service account keys ────────────────────────────
+# These files contain private keys that grant full admin access to Firebase.
+# NEVER commit them. Store securely (e.g. a password manager or secret manager).
+fire_key.json
+*service_account*.json
+*serviceaccount*.json
+*firebase*key*.json
+*firebase*cred*.json
+*google*credentials*.json
+google-services.json
+GoogleService-Info.plist
+
+# Generic credential / key file patterns
+*.pem
+*.p12
+*.pfx
+*.key
+*_rsa
+*_rsa.pub
+
+# ─── Migration & internal notes ──────────────────────────────────────────────
+# Architecture notes that contain project-internal details
+migration_notes*.md
+
+# ─── Debug logs ──────────────────────────────────────────────────────────────
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ─── OS / Editor artifacts ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json
 
-# vercel
+# ─── Vercel ──────────────────────────────────────────────────────────────────
 .vercel
 
-# typescript
+# ─── TypeScript ──────────────────────────────────────────────────────────────
 *.tsbuildinfo
 next-env.d.ts
