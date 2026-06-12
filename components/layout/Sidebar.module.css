@@ -1,0 +1,131 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.brandIcon {
+  flex-shrink: 0;
+  display: flex;
+}
+.brandText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.brandName {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.brandVersion {
+  font-size: 0.6875rem;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Nav */
+.nav {
+  flex: 1;
+  padding: 0.75rem 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.navList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6875rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+  position: relative;
+  cursor: pointer;
+}
+.navItem:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.navItem.active {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.navItem.active:hover {
+  background: var(--accent-muted);
+}
+
+.navIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+.navLabel { flex: 1; }
+
+.activeIndicator {
+  width: 4px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  position: absolute;
+  right: -0.75rem;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Section label */
+.navSection {
+  margin-top: 1.25rem;
+}
+.navSectionLabel {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 0.875rem;
+  margin-bottom: 0.375rem;
+}
+
+/* Bottom */
+.sidebarBottom {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
