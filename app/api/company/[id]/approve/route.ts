@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, getRoles } from '@/lib/auth';
-import { approveCompany } from '@/services/company.service';
+import { approveCompany, getCompany } from '@/services/company.service';
+import { syncCompanyProfileToRemoteConfig } from '@/services/remote-config.service';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,6 +21,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   try {
     await approveCompany(id, session.email);
+    const companyProfile = await getCompany(id);
+    if (companyProfile) {
+      await syncCompanyProfileToRemoteConfig(id, companyProfile);
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error(`API POST approve company ${id} error:`, error);

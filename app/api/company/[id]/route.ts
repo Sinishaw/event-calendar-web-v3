@@ -3,6 +3,7 @@ import { verifySession, getRoles } from '@/lib/auth';
 import { getCompany, updateCompany, deleteCompany } from '@/services/company.service';
 import { uploadToGCS } from '@/lib/upload';
 import { z } from 'zod';
+import { syncCompanyProfileToRemoteConfig } from '@/services/remote-config.service';
 
 const updateCompanySchema = z.object({
   name: z.string().min(2, 'Company name must be at least 2 characters').optional(),
@@ -101,6 +102,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       ...result.data,
       iUrl: iUrl === '' ? null : iUrl,
     }, session.email);
+
+    // Synchronize to Remote Config parameters
+    await syncCompanyProfileToRemoteConfig(id, updatedCompany);
 
     return NextResponse.json({ success: true, data: updatedCompany });
   } catch (error: any) {

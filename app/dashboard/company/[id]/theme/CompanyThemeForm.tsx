@@ -7,8 +7,8 @@ import { CompanyThemeConfig } from '@/services/remote-config.service';
 interface CompanyThemeFormProps {
   companyId: string;
   config: CompanyThemeConfig | null;
-  globalLanguages: string[];
-  globalTopics: string[];
+  globalLanguages: any[];
+  globalTopics: any[];
 }
 
 export default function CompanyThemeForm({
@@ -18,6 +18,28 @@ export default function CompanyThemeForm({
   globalTopics,
 }: CompanyThemeFormProps) {
   const router = useRouter();
+
+  // Normalize languages list safely to handle both string array and object array forms
+  const normalizedLanguages = (globalLanguages || []).map((l: any) => {
+    if (typeof l === 'string') {
+      return { name: l.toUpperCase(), value: l };
+    }
+    return {
+      name: l?.name || l?.value || 'Unknown',
+      value: l?.value || l?.name || '',
+    };
+  });
+
+  // Normalize topics list safely to handle both string array and object array forms
+  const normalizedTopics = (globalTopics || []).map((t: any) => {
+    if (typeof t === 'string') {
+      return { name: t, value: t };
+    }
+    return {
+      name: t?.name || t?.value || 'Unknown',
+      value: t?.value || t?.name || '',
+    };
+  });
 
   // Initialize form state
   const [primaryColorLight, setPrimaryColorLight] = useState(config?.primaryColorLight || '#ffffff');
@@ -295,9 +317,9 @@ export default function CompanyThemeForm({
             <div className="form-group">
               <label htmlFor="defaultLanguage">Default Language</label>
               <select id="defaultLanguage" value={defaultLanguage} onChange={(e) => setDefaultLanguage(e.target.value)} disabled={loading}>
-                {globalLanguages.map((l) => (
-                  <option key={l} value={l}>
-                    {l.toUpperCase()}
+                {normalizedLanguages.map((l) => (
+                  <option key={l.value} value={l.value}>
+                    {l.name}
                   </option>
                 ))}
               </select>
@@ -374,18 +396,18 @@ export default function CompanyThemeForm({
           <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Subscribed Content Topics</h3>
           <p className="text-xs text-muted" style={{ marginBottom: '1.25rem' }}>Select which content channel topics are enabled and viewable for this tenant's app users.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.75rem' }}>
-            {globalTopics.map((topic) => (
-              <div key={topic} className="flex items-center gap-2" style={{ userSelect: 'none', background: 'var(--surface-2)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            {normalizedTopics.map((topic) => (
+              <div key={topic.value} className="flex items-center gap-2" style={{ userSelect: 'none', background: 'var(--surface-2)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)' }}>
                 <input
-                  id={`topic-${topic}`}
+                  id={`topic-${topic.value}`}
                   type="checkbox"
-                  checked={selectedTopics.includes(topic)}
-                  onChange={() => toggleTopic(topic)}
+                  checked={selectedTopics.includes(topic.value)}
+                  onChange={() => toggleTopic(topic.value)}
                   disabled={loading}
                   style={{ width: 'auto', cursor: 'pointer' }}
                 />
-                <label htmlFor={`topic-${topic}`} style={{ margin: 0, fontSize: '0.85rem', cursor: 'pointer' }}>
-                  {topic}
+                <label htmlFor={`topic-${topic.value}`} style={{ margin: 0, fontSize: '0.85rem', cursor: 'pointer' }}>
+                  {topic.name}
                 </label>
               </div>
             ))}
