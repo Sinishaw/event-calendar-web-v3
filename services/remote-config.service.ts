@@ -241,6 +241,60 @@ export async function getTopics(): Promise<TopicOption[]> {
   }
 }
 
+/** Gets the global topics for subscription mapping list */
+export async function getTopicsForSubscription(): Promise<Record<string, string>> {
+  try {
+    const rc = getConfig();
+    const template = await rc.getTemplate();
+    if (template.parameters['TopicsForSubscription']) {
+      const parameterValue = template.parameters['TopicsForSubscription'].defaultValue as { value: string };
+      if (parameterValue && parameterValue.value) {
+        return JSON.parse(parameterValue.value);
+      }
+    }
+    return {};
+  } catch (error) {
+    console.error('Error fetching Remote Config TopicsForSubscription:', error);
+    return {};
+  }
+}
+
+/** Updates both global Topics and TopicsForSubscription parameters in Remote Config */
+export async function updateTopicsAndSubscription(
+  topics: TopicOption[],
+  topicsForSub: Record<string, string>
+): Promise<boolean> {
+  try {
+    const rc = getConfig();
+    const template = await rc.getTemplate();
+
+    template.parameters['Topics'] = {
+      defaultValue: {
+        value: JSON.stringify(topics),
+      },
+      valueType: 'STRING',
+    };
+
+    template.parameters['TopicsForSubscription'] = {
+      defaultValue: {
+        value: JSON.stringify(topicsForSub),
+      },
+      valueType: 'STRING',
+    };
+
+    // Validate the updated template
+    await rc.validateTemplate(template);
+
+    // Publish the updated template
+    const updated = await rc.publishTemplate(template);
+    console.log(`Remote Config published global topics updates. Etag: ${updated.etag}`);
+    return true;
+  } catch (error) {
+    console.error('Error updating Remote Config Topics parameters:', error);
+    return false;
+  }
+}
+
 export interface CategoryOption {
   name: string;
   value: string;
