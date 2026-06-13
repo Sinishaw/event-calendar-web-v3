@@ -21,7 +21,7 @@ export default function Topbar({ user }: TopbarProps) {
   const router = useRouter();
 
   async function handleLogout() {
-    await fetch('/api/auth/session-logout');
+    await fetch('/api/auth/session-logout', { method: 'POST' });
     router.push('/login');
     router.refresh();
   }
