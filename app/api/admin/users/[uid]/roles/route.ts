@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
-import { assignRoles } from '@/services/admin.service';
+import { requireAdmin, getRoles } from '@/lib/auth';
+import { assignRoles, getUser } from '@/services/admin.service';
 import { z } from 'zod';
 
 const rolesSchema = z.object({
+  superAdmin: z.boolean().default(false),
   admin: z.boolean().default(false),
   creater: z.boolean().default(false),
   publisher: z.boolean().default(false),
@@ -17,10 +18,24 @@ interface RouteParams {
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const adminSession = await requireAdmin();
   if (!adminSession) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const roles = getRoles(adminSession);
   const { uid } = await params;
+
+  // Tenant admins can only manage users in their company
+  if (!roles.isSuperAdmin) {
+    try {
+      const targetUser = await getUser(uid);
+      if (targetUser.company !== roles.company) {
+        return NextResponse.json({ error: 'Forbidden: not in your tenant' }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+  }
+
   try {
     const body = await req.json();
     const result = rolesSchema.safeParse(body);
@@ -28,12 +43,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: result.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
     }
 
-    const { admin, creater, publisher, company } = result.data;
+    const { superAdmin: superAdminGrant, admin, creater, publisher, company } = result.data;
+
+    // Only Super Admins can grant the superAdmin role; also only they can change company
     await assignRoles(uid, {
+      superAdmin: roles.isSuperAdmin ? superAdminGrant : false,
       admin,
       creater,
       publisher,
-      company: company || null,
+      company: roles.isSuperAdmin ? (company || null) : (roles.company ?? null),
     });
 
     return NextResponse.json({ success: true });

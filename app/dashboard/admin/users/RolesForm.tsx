@@ -8,19 +8,36 @@ import { Company } from '@/types/company';
 interface RolesFormProps {
   user: UserProfile;
   companies: Company[];
+  actorIsSuperAdmin: boolean;
+  actorCompany?: string;
 }
 
-export default function RolesForm({ user, companies }: RolesFormProps) {
+export default function RolesForm({ user, companies, actorIsSuperAdmin, actorCompany }: RolesFormProps) {
   const router = useRouter();
 
+  const [superAdmin, setSuperAdmin] = useState(user.superAdmin);
   const [admin, setAdmin] = useState(user.admin);
   const [creater, setCreater] = useState(user.creater);
   const [publisher, setPublisher] = useState(user.publisher);
-  const [company, setCompany] = useState(user.company === 'Not Assigned' ? '' : (user.company ?? ''));
+  const [company, setCompany] = useState(
+    actorIsSuperAdmin
+      ? (user.company === 'Not Assigned' ? '' : (user.company ?? ''))
+      : (actorCompany ?? '')
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  function handleSuperAdminToggle(checked: boolean) {
+    setSuperAdmin(checked);
+    if (checked) {
+      setAdmin(false);
+      setCreater(false);
+      setPublisher(false);
+      setCompany('');
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +50,7 @@ export default function RolesForm({ user, companies }: RolesFormProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          superAdmin,
           admin,
           creater,
           publisher,
@@ -41,11 +59,9 @@ export default function RolesForm({ user, companies }: RolesFormProps) {
       });
 
       const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || 'Failed to update user roles');
-      }
+      if (!res.ok) throw new Error(result.error || 'Failed to update roles');
 
-      setSuccess('User roles and company assignment updated successfully!');
+      setSuccess('Roles updated successfully. User must sign out and back in for changes to apply.');
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
@@ -64,7 +80,6 @@ export default function RolesForm({ user, companies }: RolesFormProps) {
           {error}
         </div>
       )}
-
       {success && (
         <div className="alert alert-success mb-4" role="alert">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
@@ -74,91 +89,97 @@ export default function RolesForm({ user, companies }: RolesFormProps) {
         </div>
       )}
 
+      {/* Company */}
       <div className="form-group">
-        <label htmlFor="company">Company Assignment</label>
-        <select
-          id="company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          disabled={loading}
-        >
-          <option value="">-- Select Company (None) --</option>
-          {companies.map((c) => (
-            <option key={c.company} value={c.company}>
-              {c.name} ({c.company})
-            </option>
-          ))}
-        </select>
-        <span className="form-hint">Assign this user to a company for content ownership.</span>
+        <label htmlFor="roles-company">Company Assignment</label>
+        {actorIsSuperAdmin ? (
+          <>
+            <select id="roles-company" value={company} onChange={(e) => setCompany(e.target.value)}
+              disabled={loading || superAdmin}>
+              <option value="">— None (unassigned) —</option>
+              {companies.map((c) => (
+                <option key={c.company} value={c.company}>{c.name} ({c.company})</option>
+              ))}
+            </select>
+            <span className="form-hint">
+              {superAdmin ? 'Super Admins are not scoped to a company.' : 'Scopes this user to a specific tenant.'}
+            </span>
+          </>
+        ) : (
+          <>
+            <input type="text" value={actorCompany || 'Your Company'} disabled style={{ opacity: 0.7 }} />
+            <span className="form-hint">Tenant Admins can only assign users within their own company.</span>
+          </>
+        )}
       </div>
 
       <hr className="divider" />
+      <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, marginBottom: '1rem' }}>Access Control Roles</h3>
 
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Access Control Roles</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        <div className="flex items-center gap-2" style={{ userSelect: 'none' }}>
-          <input
-            id="role-admin"
-            type="checkbox"
-            checked={admin}
-            onChange={(e) => setAdmin(e.target.checked)}
-            disabled={loading}
-            style={{ width: 'auto', cursor: 'pointer' }}
-          />
-          <div style={{ cursor: 'pointer' }}>
-            <label htmlFor="role-admin" style={{ margin: 0, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>ADMIN</label>
-            <span className="text-xs text-muted" style={{ display: 'block' }}>Can perform full system setup, manage companies and users.</span>
+        {/* Super Admin — only for Super Admins */}
+        {actorIsSuperAdmin && (
+          <div
+            style={{
+              display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+              background: superAdmin ? 'rgba(239,68,68,0.08)' : 'var(--bg-deep)',
+              border: `1px solid ${superAdmin ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle)'}`,
+              borderRadius: 'var(--radius)', padding: '0.75rem',
+              cursor: 'pointer', userSelect: 'none', transition: 'all var(--transition)',
+            }}
+            onClick={() => !loading && handleSuperAdminToggle(!superAdmin)}
+          >
+            <input id="roles-superadmin" type="checkbox" checked={superAdmin}
+              onChange={(e) => handleSuperAdminToggle(e.target.checked)} disabled={loading}
+              style={{ width: 'auto', cursor: 'pointer', marginTop: '2px', accentColor: 'var(--danger)' }}
+              onClick={(e) => e.stopPropagation()} />
+            <div>
+              <label htmlFor="roles-superadmin" style={{ margin: 0, fontWeight: 700, color: 'var(--danger)', cursor: 'pointer' }}>SUPER ADMIN</label>
+              <span className="text-xs text-muted" style={{ display: 'block', marginTop: '0.15rem' }}>
+                Global platform access — not scoped to any company.
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex items-center gap-2" style={{ userSelect: 'none' }}>
-          <input
-            id="role-creater"
-            type="checkbox"
-            checked={creater}
-            onChange={(e) => setCreater(e.target.checked)}
-            disabled={loading}
-            style={{ width: 'auto', cursor: 'pointer' }}
-          />
-          <div style={{ cursor: 'pointer' }}>
-            <label htmlFor="role-creater" style={{ margin: 0, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>CREATOR (CREATER)</label>
-            <span className="text-xs text-muted" style={{ display: 'block' }}>Can add month images, content articles, and terms.</span>
+        {[
+          { id: 'roles-admin', label: 'ADMIN', description: "Manages their tenant's users, content, and configuration.", state: admin, setter: setAdmin },
+          { id: 'roles-creater', label: 'CREATOR', description: 'Creates content, month images, and topic articles.', state: creater, setter: setCreater },
+          { id: 'roles-publisher', label: 'PUBLISHER', description: 'Approves and publishes content and media.', state: publisher, setter: setPublisher },
+        ].map(({ id, label, description, state, setter }) => (
+          <div
+            key={id}
+            style={{
+              display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+              background: state ? 'rgba(var(--accent-rgb, 99 102 241), 0.06)' : 'var(--bg-deep)',
+              border: `1px solid ${state ? 'var(--accent)' : 'var(--border-subtle)'}`,
+              borderRadius: 'var(--radius)', padding: '0.75rem',
+              cursor: superAdmin || loading ? 'not-allowed' : 'pointer',
+              opacity: superAdmin ? 0.5 : 1, userSelect: 'none',
+              transition: 'all var(--transition)',
+            }}
+            onClick={() => !loading && !superAdmin && setter(!state)}
+          >
+            <input id={id} type="checkbox" checked={state} onChange={(e) => setter(e.target.checked)}
+              disabled={loading || superAdmin} style={{ width: 'auto', cursor: 'pointer', marginTop: '2px' }}
+              onClick={(e) => e.stopPropagation()} />
+            <div>
+              <label htmlFor={id} style={{ margin: 0, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>{label}</label>
+              <span className="text-xs text-muted" style={{ display: 'block', marginTop: '0.15rem' }}>{description}</span>
+            </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2" style={{ userSelect: 'none' }}>
-          <input
-            id="role-publisher"
-            type="checkbox"
-            checked={publisher}
-            onChange={(e) => setPublisher(e.target.checked)}
-            disabled={loading}
-            style={{ width: 'auto', cursor: 'pointer' }}
-          />
-          <div style={{ cursor: 'pointer' }}>
-            <label htmlFor="role-publisher" style={{ margin: 0, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>PUBLISHER</label>
-            <span className="text-xs text-muted" style={{ display: 'block' }}>Can approve and publish content, images, and config.</span>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <hr className="divider" style={{ marginTop: '2rem' }} />
+      <hr className="divider" style={{ marginTop: '1.5rem' }} />
 
-      <div className="flex gap-3" style={{ justifyContent: 'flex-start' }}>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={loading}
-        >
+      <div className="flex gap-3">
+        <button type="submit" className="btn btn-primary" disabled={loading}>
           {loading ? 'Applying…' : 'Apply Roles'}
         </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => router.push(`/dashboard/admin/users/${user.uid}`)}
-          disabled={loading}
-        >
+        <button type="button" className="btn btn-secondary" disabled={loading}
+          onClick={() => router.push(`/dashboard/admin/users/${user.uid}`)}>
           Back to Details
         </button>
       </div>

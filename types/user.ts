@@ -7,6 +7,7 @@ export interface UserProfile {
   photoURL?: string;
   disabled: boolean;
   company?: string;
+  superAdmin: boolean;
   admin: boolean;
   creater: boolean;
   publisher: boolean;

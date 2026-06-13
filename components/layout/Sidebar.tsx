@@ -6,6 +6,7 @@ import styles from './Sidebar.module.css';
 
 interface SidebarProps {
   roles: {
+    isSuperAdmin: boolean;
     isAdmin: boolean;
     isPublisher: boolean;
     isCreater: boolean;
@@ -65,46 +66,14 @@ const NAV_ITEMS = [
   },
 ];
 
-const ADMIN_NAV_ITEMS = [
-  {
-    label: 'Companies',
-    href: '/dashboard/company',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Global Topics',
-    href: '/dashboard/admin/topics',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-        <line x1="7" y1="7" x2="7.01" y2="7"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Users',
-    href: '/dashboard/admin/users',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    ),
-  },
-];
-
 export default function Sidebar({ roles }: SidebarProps) {
   const pathname = usePathname();
 
   function isActive(href: string, exact = false) {
     return exact ? pathname === href : pathname.startsWith(href);
   }
+
+  const hasAdminAccess = roles.isSuperAdmin || roles.isAdmin;
 
   return (
     <aside className={styles.sidebar}>
@@ -141,25 +110,72 @@ export default function Sidebar({ roles }: SidebarProps) {
           ))}
         </ul>
 
-        {/* Admin section */}
-        {roles.isAdmin && (
+        {/* Administration section */}
+        {hasAdminAccess && (
           <div className={styles.navSection}>
-            <span className={styles.navSectionLabel}>Administration</span>
+            <span className={styles.navSectionLabel}>
+              {roles.isSuperAdmin ? 'Super Administration' : 'Administration'}
+            </span>
             <ul className={styles.navList}>
-              {ADMIN_NAV_ITEMS.map((item) => (
-                <li key={item.href}>
+              {/* Companies — always visible to both admin types */}
+              <li>
+                <Link
+                  href="/dashboard/company"
+                  className={`${styles.navItem} ${isActive('/dashboard/company') ? styles.active : ''}`}
+                >
+                  <span className={styles.navIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                      <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                  </span>
+                  <span className={styles.navLabel}>Companies</span>
+                  {isActive('/dashboard/company') && (
+                    <span className={styles.activeIndicator} aria-hidden />
+                  )}
+                </Link>
+              </li>
+
+              {/* Global Topics — Super Admin only */}
+              {roles.isSuperAdmin && (
+                <li>
                   <Link
-                    href={item.href}
-                    className={`${styles.navItem} ${isActive(item.href) ? styles.active : ''}`}
+                    href="/dashboard/admin/topics"
+                    className={`${styles.navItem} ${isActive('/dashboard/admin/topics') ? styles.active : ''}`}
                   >
-                    <span className={styles.navIcon}>{item.icon}</span>
-                    <span className={styles.navLabel}>{item.label}</span>
-                    {isActive(item.href) && (
+                    <span className={styles.navIcon}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                      </svg>
+                    </span>
+                    <span className={styles.navLabel}>Global Topics</span>
+                    {isActive('/dashboard/admin/topics') && (
                       <span className={styles.activeIndicator} aria-hidden />
                     )}
                   </Link>
                 </li>
-              ))}
+              )}
+
+              {/* Users — visible to both admin types */}
+              <li>
+                <Link
+                  href="/dashboard/admin/users"
+                  className={`${styles.navItem} ${isActive('/dashboard/admin/users') ? styles.active : ''}`}
+                >
+                  <span className={styles.navIcon}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </span>
+                  <span className={styles.navLabel}>Users</span>
+                  {isActive('/dashboard/admin/users') && (
+                    <span className={styles.activeIndicator} aria-hidden />
+                  )}
+                </Link>
+              </li>
             </ul>
           </div>
         )}

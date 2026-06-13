@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
-import { getUser, updateUser, deleteUser } from '@/services/admin.service';
+import { requireAdmin, getRoles } from '@/lib/auth';
+import { getUser, updateUser, deleteUser, assignRoles } from '@/services/admin.service';
 import { uploadToGCS } from '@/lib/upload';
 import { z } from 'zod';
 
@@ -17,13 +17,31 @@ interface RouteParams {
   params: Promise<{ uid: string }>;
 }
 
+/** Helper: check if the acting admin can manage the target user */
+async function canManageUser(actorRoles: ReturnType<typeof getRoles>, targetUid: string): Promise<boolean> {
+  if (actorRoles.isSuperAdmin) return true;
+  // Tenant admins can only manage users in their company
+  try {
+    const targetUser = await getUser(targetUid);
+    return targetUser.company === actorRoles.company;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: NextRequest, { params }: RouteParams) {
   const adminSession = await requireAdmin();
   if (!adminSession) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const { uid } = await params;
+  const roles = getRoles(adminSession);
+
+  if (!await canManageUser(roles, uid)) {
+    return NextResponse.json({ error: 'Forbidden: not in your tenant' }, { status: 403 });
+  }
+
   try {
     const user = await getUser(uid);
     return NextResponse.json({ success: true, data: user });
@@ -36,10 +54,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   const adminSession = await requireAdmin();
   if (!adminSession) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const { uid } = await params;
+  const roles = getRoles(adminSession);
+
+  if (!await canManageUser(roles, uid)) {
+    return NextResponse.json({ error: 'Forbidden: not in your tenant' }, { status: 403 });
+  }
+
   try {
     const formData = await req.formData();
     const email = formData.get('email') as string | null;
@@ -49,6 +73,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const emailVerifiedVal = formData.get('emailVerified');
     const disabledVal = formData.get('disabled');
     const photoFile = formData.get('photo') as File | null;
+
+    // Roles
+    const updateRoles = formData.get('updateRoles') === 'true';
+    const isSuperAdminGrant = formData.get('superAdmin') === 'true';
+    const isAdminGrant = formData.get('admin') === 'true';
+    const isCreaterGrant = formData.get('creater') === 'true';
+    const isPublisherGrant = formData.get('publisher') === 'true';
+    const company = formData.get('company') as string | null;
 
     const dataObj: any = {};
     if (email !== null) dataObj.email = email;
@@ -78,7 +110,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         const timestamp = Date.now();
         const destinationPath = `BackendUsersProfilePictures/${uid}_${timestamp}.${ext}`;
         const photoURL = await uploadToGCS(buffer, destinationPath, photoFile.type);
-
         (updateInput as any).photoURL = photoURL;
       } catch (uploadError) {
         console.error('Failed to upload user profile photo during update:', uploadError);
@@ -86,6 +117,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     const updatedUser = await updateUser(uid, updateInput);
+
+    // Atomically update roles if requested
+    if (updateRoles) {
+      // Only super admins can grant superAdmin; tenant admins can only set tenant roles
+      const superAdminClaim = roles.isSuperAdmin ? isSuperAdminGrant : false;
+      // Tenant admins can't change the company assignment
+      const companyClaim = roles.isSuperAdmin ? (company || null) : (roles.company ?? null);
+
+      await assignRoles(uid, {
+        superAdmin: superAdminClaim,
+        admin: isAdminGrant,
+        creater: isCreaterGrant,
+        publisher: isPublisherGrant,
+        company: companyClaim,
+      });
+    }
+
     return NextResponse.json({ success: true, data: updatedUser });
   } catch (error: any) {
     console.error(`API PUT user ${uid} error:`, error);
@@ -96,10 +144,16 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const adminSession = await requireAdmin();
   if (!adminSession) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const { uid } = await params;
+  const roles = getRoles(adminSession);
+
+  if (!await canManageUser(roles, uid)) {
+    return NextResponse.json({ error: 'Forbidden: not in your tenant' }, { status: 403 });
+  }
+
   try {
     await deleteUser(uid);
     return NextResponse.json({ success: true });

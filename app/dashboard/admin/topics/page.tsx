@@ -13,7 +13,7 @@ export default async function ManageTopicsPage() {
   if (!session) redirect('/login');
 
   const roles = getRoles(session);
-  if (!roles.isAdmin) redirect('/dashboard');
+  if (!roles.isSuperAdmin) redirect('/dashboard');
 
   const topics = await getTopics();
   const topicsForSubscription = await getTopicsForSubscription();

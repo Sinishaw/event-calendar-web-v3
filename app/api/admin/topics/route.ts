@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySession, getRoles } from '@/lib/auth';
+import { verifySession, getRoles, requireSuperAdmin } from '@/lib/auth';
 import { 
   getTopics, 
   getTopicsForSubscription, 
@@ -9,14 +9,9 @@ import {
 import { uploadToGCS } from '@/lib/upload';
 
 export async function GET(req: NextRequest) {
-  const session = await verifySession();
+  const session = await requireSuperAdmin();
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const roles = getRoles(session);
-  if (!roles.isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
   }
 
   try {
@@ -30,14 +25,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await verifySession();
+  const session = await requireSuperAdmin();
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const roles = getRoles(session);
-  if (!roles.isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
   }
 
   try {
@@ -85,14 +75,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await verifySession();
+  const session = await requireSuperAdmin();
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const roles = getRoles(session);
-  if (!roles.isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
   }
 
   try {

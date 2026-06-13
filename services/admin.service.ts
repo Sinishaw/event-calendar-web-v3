@@ -14,6 +14,7 @@ function mapUserRecord(user: any): UserProfile {
     photoURL: user.photoURL,
     disabled: user.disabled,
     company: customClaims.company ?? 'Not Assigned',
+    superAdmin: !!customClaims.superAdmin,
     admin: !!customClaims.admin,
     creater: !!customClaims.creater,
     publisher: !!customClaims.publisher,
@@ -96,6 +97,7 @@ export async function deleteUser(uid: string): Promise<void> {
 }
 
 export interface UserRolesInput {
+  superAdmin: boolean;
   admin: boolean;
   creater: boolean;
   publisher: boolean;
@@ -105,6 +107,7 @@ export interface UserRolesInput {
 export async function assignRoles(uid: string, roles: UserRolesInput): Promise<void> {
   try {
     const claims = {
+      superAdmin: roles.superAdmin,
       admin: roles.admin,
       creater: roles.creater,
       publisher: roles.publisher,
@@ -116,3 +119,4 @@ export async function assignRoles(uid: string, roles: UserRolesInput): Promise<v
     throw error;
   }
 }
+

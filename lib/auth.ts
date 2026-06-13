@@ -27,16 +27,31 @@ export async function createSessionCookie(idToken: string): Promise<string> {
 /** Returns user-readable roles from decoded token */
 export function getRoles(decoded: DecodedIdToken) {
   return {
-    isAdmin:     !!decoded.admin,
-    isPublisher: !!decoded.publisher,
-    isCreater:   !!decoded.creater,
-    company:     decoded.company as string | undefined,
+    isSuperAdmin: !!decoded.superAdmin,
+    isAdmin:      !!decoded.admin,
+    isPublisher:  !!decoded.publisher,
+    isCreater:    !!decoded.creater,
+    company:      decoded.company as string | undefined,
   };
 }
 
-/** Verifies session and asserts that user is an admin, returning token or null */
+/**
+ * Verifies session and asserts that user is an admin (either Super Admin or Tenant Admin).
+ * Returns decoded token or null.
+ */
 export async function requireAdmin(): Promise<DecodedIdToken | null> {
   const decoded = await verifySession();
-  if (!decoded || !decoded.admin) return null;
+  if (!decoded || (!decoded.admin && !decoded.superAdmin)) return null;
   return decoded;
 }
+
+/**
+ * Verifies session and asserts that user is a Super Admin.
+ * Returns decoded token or null.
+ */
+export async function requireSuperAdmin(): Promise<DecodedIdToken | null> {
+  const decoded = await verifySession();
+  if (!decoded || !decoded.superAdmin) return null;
+  return decoded;
+}
+
