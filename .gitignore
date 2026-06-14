@@ -31,6 +31,7 @@
 # These files contain private keys that grant full admin access to Firebase.
 # NEVER commit them. Store securely (e.g. a password manager or secret manager).
 fire_key.json
+fire_key_staging.json
 *service_account*.json
 *serviceaccount*.json
 *firebase*key*.json

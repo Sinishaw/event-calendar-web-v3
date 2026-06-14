@@ -21,11 +21,15 @@ function getFirebaseAdmin(): App {
       });
     } else {
       try {
-        const serviceAccount = require('../fire_key.json');
+        const path = require('path');
+        const fs = require('fs');
+        const keyFile = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH || 'fire_key.json';
+        const keyPath = path.resolve(/*turbopackIgnore: true*/ process.cwd(), keyFile);
+        const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
         credential = cert(serviceAccount);
       } catch (error) {
         throw new Error(
-          'Firebase Admin initialization failed: Missing Firebase environment variables (FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL) and fire_key.json not found.'
+          `Firebase Admin initialization failed: Missing Firebase environment variables or service account key not found at ${process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH || 'fire_key.json'}.`
         );
       }
     }
@@ -43,4 +47,6 @@ function getFirebaseAdmin(): App {
 export const adminApp = getFirebaseAdmin();
 export const adminAuth = getAuth(adminApp);
 export const adminDb = getFirestore(adminApp);
-export const adminBucket = getStorage(adminApp).bucket('coolcalendarplatform.appspot.com');
+export const adminBucket = getStorage(adminApp).bucket(
+  process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'coolcalendarplatform.appspot.com'
+);
