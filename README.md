@@ -1,3 +1,7 @@
+# Web Event Calendar Version 3.0 
+
+Revised by the help of AI
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
