@@ -220,7 +220,7 @@ If committed, ask:
      MCP, then manual instructions — Section 11).
   3. PR body summarizes changes and references the issue (`Refs
      #<issueNumber>`, not auto-close).
-  4. Update the linked issue's Project board Status → `Ready` (see Section
+  4. Update the linked issue's Project board Status → `In review` (see Section
      12.3), signaling the reviewer it's ready for review.
   5. Agent does not review/approve/merge — that's a human reviewer's job.
 
@@ -267,7 +267,7 @@ authenticated, no hardcoded usernames.
 ### 12.3 Project status transitions
 - **Issue created + branch checked out** (3.1/4.1) → add the issue to the
   Project board, Status → `In progress`.
-- **PR opened** (10) → linked issue's Status → `Ready`.
+- **PR opened** (10) → linked issue's Status → `In review`.
 - **PR merged** → Status → `Done` for both the issue and the PR item, and
   the issue should auto-close. This step happens outside any agent session
   (a human merges later), so it is **not** performed by the agent — instead,
