@@ -103,6 +103,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       showBottomMenu: formData.get('showBottomMenu') !== 'false', // default to true
       reverseAdsAnimation: formData.get('reverseAdsAnimation') === 'true',
       verticalAxisAdsAnimation: formData.get('verticalAxisAdsAnimation') !== 'false', // default to true
+      logoLocation: (formData.get('logoLocation') as string) || 'topright',
+      adsScreenLocation: (formData.get('adsScreenLocation') as string) || 'left',
 
       profile: {
         id: companyProfile.id,

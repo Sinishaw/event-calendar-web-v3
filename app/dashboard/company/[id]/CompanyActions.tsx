@@ -12,10 +12,13 @@ interface CompanyActionsProps {
 export default function CompanyActions({ company, isPublisher }: CompanyActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [localSt, setLocalSt] = useState(company.st);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   async function handleApprove() {
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
@@ -25,12 +28,14 @@ export default function CompanyActions({ company, isPublisher }: CompanyActionsP
 
       const result = await res.json();
       if (!res.ok) {
-        throw new Error(result.error || 'Failed to approve company');
+        throw new Error(result.error || 'Failed to approve company. Please verify your permissions.');
       }
 
+      setLocalSt(1);
+      setSuccess('Company approved and published successfully!');
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+      setError(err.message || 'Failed to approve company. Please verify your permissions and try again.');
     } finally {
       setLoading(false);
     }
@@ -42,6 +47,7 @@ export default function CompanyActions({ company, isPublisher }: CompanyActionsP
     }
 
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
@@ -51,13 +57,15 @@ export default function CompanyActions({ company, isPublisher }: CompanyActionsP
 
       const result = await res.json();
       if (!res.ok) {
-        throw new Error(result.error || 'Failed to delete company');
+        throw new Error(result.error || 'Failed to delete company. Please verify your permissions.');
       }
 
+      setLocalSt(2);
+      setSuccess('Company deleted successfully. Redirecting...');
       router.push('/dashboard/company');
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+      setError(err.message || 'Failed to delete company. Please verify your permissions and try again.');
       setLoading(false);
     }
   }
@@ -72,8 +80,14 @@ export default function CompanyActions({ company, isPublisher }: CompanyActionsP
         </div>
       )}
 
+      {success && (
+        <div className="alert alert-success" role="alert" style={{ fontSize: '0.8rem', padding: '0.5rem 0.75rem' }}>
+          {success}
+        </div>
+      )}
+
       <div className="flex gap-2 w-full">
-        {company.st !== 1 && (
+        {localSt !== 1 && (
           <button
             onClick={handleApprove}
             disabled={loading}
@@ -83,7 +97,7 @@ export default function CompanyActions({ company, isPublisher }: CompanyActionsP
           </button>
         )}
 
-        {company.st !== 2 && (
+        {localSt !== 2 && (
           <button
             onClick={handleDelete}
             disabled={loading}
