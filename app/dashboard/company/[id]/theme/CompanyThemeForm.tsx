@@ -4,6 +4,32 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CompanyThemeConfig } from '@/services/remote-config.service';
 
+const logoOptions = [
+  { value: 'topleft', label: 'Top Left' },
+  { value: 'topright', label: 'Top Right' },
+  { value: 'bottomleft', label: 'Bottom Left' },
+  { value: 'bottomright', label: 'Bottom Right' },
+];
+
+const adsOptionsMap: Record<string, { value: string; label: string }[]> = {
+  topright: [
+    { value: 'left', label: 'Left' },
+    { value: 'bottom', label: 'Bottom' },
+  ],
+  topleft: [
+    { value: 'right', label: 'Right' },
+    { value: 'bottom', label: 'Bottom' },
+  ],
+  bottomleft: [
+    { value: 'top', label: 'Top' },
+    { value: 'right', label: 'Right' },
+  ],
+  bottomright: [
+    { value: 'left', label: 'Left' },
+    { value: 'top', label: 'Top' },
+  ],
+};
+
 interface CompanyThemeFormProps {
   companyId: string;
   config: CompanyThemeConfig | null;
@@ -56,6 +82,20 @@ export default function CompanyThemeForm({
   const [showBottomMenu, setShowBottomMenu] = useState(config?.showBottomMenu ?? true);
   const [reverseAdsAnimation, setReverseAdsAnimation] = useState(config?.reverseAdsAnimation ?? false);
   const [verticalAxisAdsAnimation, setVerticalAxisAdsAnimation] = useState(config?.verticalAxisAdsAnimation ?? true);
+
+  const initialLogo = config?.logoLocation || 'topright';
+  const initialAds = config?.adsScreenLocation || (adsOptionsMap[initialLogo]?.[0]?.value || 'left');
+
+  const [logoLocation, setLogoLocation] = useState(initialLogo);
+  const [adsScreenLocation, setAdsScreenLocation] = useState(initialAds);
+
+  const handleLogoLocationChange = (val: string) => {
+    setLogoLocation(val);
+    const validAds = adsOptionsMap[val] || [];
+    if (validAds.length > 0) {
+      setAdsScreenLocation(validAds[0].value);
+    }
+  };
 
   // Selected topics list
   const [selectedTopics, setSelectedTopics] = useState<string[]>(config?.topic || []);
@@ -131,6 +171,8 @@ export default function CompanyThemeForm({
       formData.append('showBottomMenu', String(showBottomMenu));
       formData.append('reverseAdsAnimation', String(reverseAdsAnimation));
       formData.append('verticalAxisAdsAnimation', String(verticalAxisAdsAnimation));
+      formData.append('logoLocation', logoLocation);
+      formData.append('adsScreenLocation', adsScreenLocation);
       
       // Send topics as comma-separated string or array string
       formData.append('topics', JSON.stringify(selectedTopics));
@@ -167,7 +209,24 @@ export default function CompanyThemeForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <div style={{ position: 'relative' }}>
+      {loading && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.15)',
+            backdropFilter: 'blur(1px)',
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'not-allowed',
+            borderRadius: 'var(--radius-lg)',
+          }}
+        />
+      )}
+      <form onSubmit={handleSubmit} noValidate>
       {error && (
         <div className="alert alert-danger mb-4" role="alert">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
@@ -334,6 +393,38 @@ export default function CompanyThemeForm({
             </div>
 
             <div className="form-group">
+              <label htmlFor="logoLocation">Logo Location</label>
+              <select
+                id="logoLocation"
+                value={logoLocation}
+                onChange={(e) => handleLogoLocationChange(e.target.value)}
+                disabled={loading}
+              >
+                {logoOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="adsScreenLocation">Ads Screen Location</label>
+              <select
+                id="adsScreenLocation"
+                value={adsScreenLocation}
+                onChange={(e) => setAdsScreenLocation(e.target.value)}
+                disabled={loading}
+              >
+                {(adsOptionsMap[logoLocation] || []).map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="menuBackgroundOpacity">Side Menu Opacity ({menuBackgroundOpacity})</label>
               <input
                 id="menuBackgroundOpacity"
@@ -425,5 +516,6 @@ export default function CompanyThemeForm({
 
       </div>
     </form>
+    </div>
   );
 }

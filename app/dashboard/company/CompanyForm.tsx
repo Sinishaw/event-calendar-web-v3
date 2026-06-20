@@ -214,13 +214,12 @@ export default function CompanyForm({ company }: CompanyFormProps) {
               </div>
 
               <div className="form-group">
-                <label htmlFor="established">Established Year</label>
+                <label htmlFor="established">Established Date</label>
                 <input
                   id="established"
-                  type="text"
+                  type="date"
                   value={established}
                   onChange={(e) => setEstablished(e.target.value)}
-                  placeholder="e.g. 2012-05-15"
                   disabled={loading}
                 />
               </div>
