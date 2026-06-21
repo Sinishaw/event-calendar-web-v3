@@ -70,8 +70,10 @@ export default function CompanyThemeForm({
   // Initialize form state
   const [primaryColorLight, setPrimaryColorLight] = useState(config?.primaryColorLight || '#ffffff');
   const [accentColorLight, setAccentColorLight] = useState(config?.accentColorLight || '#d97706');
+  const [holidayColorLight, setHolidayColorLight] = useState(config?.holidayColorLight || '#FF5252');
   const [primaryColorDark, setPrimaryColorDark] = useState(config?.primaryColorDark || '#1c1917');
   const [accentColorDark, setAccentColorDark] = useState(config?.accentColorDark || '#f59e0b');
+  const [holidayColorDark, setHolidayColorDark] = useState(config?.holidayColorDark || '#FF5252');
   const [defaultTheme, setDefaultTheme] = useState(config?.defaultTheme || 'dark');
   const [defaultLanguage, setDefaultLanguage] = useState(config?.defaultLanguage || 'am');
   const [NumberFormat, setNumberFormat] = useState(config?.NumberFormat || 'english');
@@ -159,8 +161,10 @@ export default function CompanyThemeForm({
       const formData = new FormData();
       formData.append('primaryColorLight', primaryColorLight);
       formData.append('accentColorLight', accentColorLight);
+      formData.append('holidayColorLight', holidayColorLight);
       formData.append('primaryColorDark', primaryColorDark);
       formData.append('accentColorDark', accentColorDark);
+      formData.append('holidayColorDark', holidayColorDark);
       formData.append('defaultTheme', defaultTheme);
       formData.append('defaultLanguage', defaultLanguage);
       formData.append('NumberFormat', NumberFormat);
@@ -335,6 +339,13 @@ export default function CompanyThemeForm({
                   <input type="text" value={accentColorLight} onChange={(e) => setAccentColorLight(e.target.value)} disabled={loading} placeholder="#d97706" />
                 </div>
               </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label htmlFor="holiday-light">Holiday Color</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input id="holiday-light" type="color" value={holidayColorLight} onChange={(e) => setHolidayColorLight(e.target.value)} disabled={loading} style={{ width: '48px', height: '38px', padding: 0 }} />
+                  <input type="text" value={holidayColorLight} onChange={(e) => setHolidayColorLight(e.target.value)} disabled={loading} placeholder="#FF5252" />
+                </div>
+              </div>
             </div>
 
             {/* Dark Mode Colors */}
@@ -352,6 +363,13 @@ export default function CompanyThemeForm({
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input id="accent-dark" type="color" value={accentColorDark} onChange={(e) => setAccentColorDark(e.target.value)} disabled={loading} style={{ width: '48px', height: '38px', padding: 0 }} />
                   <input type="text" value={accentColorDark} onChange={(e) => setAccentColorDark(e.target.value)} disabled={loading} placeholder="#f59e0b" />
+                </div>
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label htmlFor="holiday-dark">Holiday Color</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input id="holiday-dark" type="color" value={holidayColorDark} onChange={(e) => setHolidayColorDark(e.target.value)} disabled={loading} style={{ width: '48px', height: '38px', padding: 0 }} />
+                  <input type="text" value={holidayColorDark} onChange={(e) => setHolidayColorDark(e.target.value)} disabled={loading} placeholder="#FF5252" />
                 </div>
               </div>
             </div>

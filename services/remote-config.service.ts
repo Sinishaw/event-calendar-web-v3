@@ -32,6 +32,8 @@ export interface CompanyThemeConfig {
   verticalAxisAdsAnimation: boolean;
   logoLocation?: string;
   adsScreenLocation?: string;
+  holidayColorLight?: string;
+  holidayColorDark?: string;
   monthImages?: any;
   termsAndPolicies?: any;
   profile?: any;
