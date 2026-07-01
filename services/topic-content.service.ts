@@ -355,7 +355,7 @@ export async function notifyTopicContent(topicId: string, contentId: string): Pr
         category: String(content.category),
         nationalDay: String(content.nationalDay || ''),
         ageRestriction: String(content.ageRestriction),
-        notifyUser: String(content.notifyUser),
+        notifyUser: 'true',
         markOnCalendar: String(content.markOnCalendar),
         markDate: new Date(content.markDate).toISOString(),
         tagColor: String(content.tagColor),
@@ -373,10 +373,13 @@ export async function notifyTopicContent(topicId: string, contentId: string): Pr
     console.log(`Topic FCM sent successfully. Message ID: ${messageId}`);
 
     // Update status in Firestore
+    const nextSuccessCount = content.successCount < 0 ? 1 : content.successCount + 1;
     await docRef.update({
       messageId: messageId,
       notified: true,
       notifiedDate: new Date(),
+      notifyUser: true,
+      successCount: nextSuccessCount,
     });
 
     return messageId;
